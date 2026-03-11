@@ -1,4 +1,5 @@
-func.func @mykernel(%myvar3:tensor<6xf64>, %myvar4:tensor<6xf64>, %out:tensor<6xf64>) -> tensor<6xf64>
+module{
+gpu.func @mykernel(%myvar3:tensor<6xf64>, %myvar4:tensor<6xf64>, %out:tensor<6xf64>) -> tensor<6xf64>
 {
 %myvar0 = arith.constant dense<[[-0.04820838, 0.79548023, 0.19283351,-0.04820838, 0.19283351,-0.08473049],
  [-0.08473049, 0.19283351, 0.19283351,-0.04820838, 0.79548023,-0.04820838],
@@ -69,4 +70,5 @@ func.func @mykernel(%myvar3:tensor<6xf64>, %myvar4:tensor<6xf64>, %out:tensor<6x
         linalg.yield %inc : f64
     } -> tensor<6xf64>
 func.return %myresult : tensor<6xf64>
+}
 }
