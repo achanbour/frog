@@ -1,3 +1,4 @@
+module{
 func.func @mykernel(%myvar3:tensor<6xf64>, %myvar4:tensor<6xf64>, %out:tensor<6xf64>) -> tensor<6xf64>
 {
 %myvar0 = arith.constant dense<[[-0.04820838, 0.79548023, 0.19283351,-0.04820838, 0.19283351,-0.08473049],
@@ -69,4 +70,13 @@ func.func @mykernel(%myvar3:tensor<6xf64>, %myvar4:tensor<6xf64>, %out:tensor<6x
         linalg.yield %inc : f64
     } -> tensor<6xf64>
 func.return %myresult : tensor<6xf64>
+}
+func.func @main() -> i32 {
+    %myvar3val = arith.constant dense<[0.11169079,0.11169079,0.11169079,0.05497587,0.05497587,0.05497587]> : tensor<6xf64>
+    %myvar4val = arith.constant dense<[0.11169079,0.11169079,0.11169079,0.05497587,0.05497587,0.05497587]> : tensor<6xf64>
+    %outval = arith.constant dense <[0.11169079,0.11169079,0.11169079,0.05497587,0.05497587,0.05497587]> : tensor<6xf64>
+    %result = func.call @mykernel(%myvar3val, %myvar4val, %outval): (tensor<6xf64>, tensor<6xf64>, tensor<6xf64>) -> tensor<6xf64>
+    %return1 = arith.constant 0 : i32
+    return %return1 : i32
+}
 }
