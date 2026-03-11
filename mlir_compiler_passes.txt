@@ -12,3 +12,14 @@ mlir-opt mykernel.mlir \
   --finalize-memref-to-llvm \
   --reconcile-unrealized-casts \
   --convert-gpu-to-rocdl --rocdl-attach-target -o mykernel_opt.mlir
+
+
+
+
+╰─ mlir-opt mykernel.mlir                   \                                                                                                                         ─╯
+  --pass-pipeline="builtin.module(      \
+    gpu-kernel-outlining,               \ # Outline gpu.launch body to a kernel.
+    rocdl-attach-target{chip=sm_90 O=3}, \ # Attach an NVVM target to a gpu.module op.
+    gpu.module(convert-gpu-to-rocdl),    \ # Convert GPU to NVVM.
+    gpu-to-llvm                        \ # Convert GPU to LLVM.
+  )" -o example-rocdl.mlir
