@@ -23,3 +23,50 @@ mlir-opt mykernel.mlir \
     gpu.module(convert-gpu-to-rocdl),    \ # Convert GPU to NVVM.
     gpu-to-llvm                        \ # Convert GPU to LLVM.
   )" -o example-rocdl.mlir
+
+
+
+
+mlir-opt gpu.mlir \
+--canonicalize \
+--one-shot-bufferize \
+--canonicalize \
+--convert-linalg-to-affine-loops \
+--func.func(affine-loop-invariant-code-motion) \
+--func.func(convert-affine-for-to-gpu) \
+--gpu-kernel-outlining \
+--lower-affine \
+--gpu-decompose-memrefs \
+--expand-strided-metadata \
+--normalize-memrefs \
+--rocdl-attach-target \
+--convert-rocdl-to-llvm \
+--reconcile-unrealized-casts \
+--gpu-to-llvm  -o gpu_opt.mlir
+
+      --convert-amdgpu-to-rocdl                              -   Convert AMDGPU dialect to ROCDL dialect
+      --convert-complex-to-rocdl-library-calls               -   Convert Complex dialect to ROCDL library calls
+      --convert-gpu-to-rocdl                                 -   Generate ROCDL operations for gpu operations
+      --convert-math-to-rocdl                                -   Convert Math dialect to ROCDL library calls
+      --rocdl-attach-target                                  -   Attaches a ROCDL target attribute to a GPU Module.
+
+
+
+
+
+
+      this worked??
+      ❯ mlir-opt \
+  --convert-gpu-to-rocdl \
+  --convert-arith-to-llvm \
+  --convert-func-to-llvm \
+  --gpu-to-llvm \
+  gpu.mlir -o gpu_rocdl.mlir
+
+
+
+
+
+mlir-opt %s \
+mlir-opt -pass-pipeline='builtin.module(gpu.module(strip-debuginfo,convert-gpu-to-rocdl{index-bitwidth=32 runtime=HIP}),rocdl-attach-target{chip=%chip})' \
+mlir-opt -gpu-to-llvm -reconcile-unrealized-casts -gpu-module-to-binary \
