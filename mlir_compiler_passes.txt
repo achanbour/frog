@@ -54,7 +54,6 @@ mlir-opt gpu.mlir \
 
 
 
-
       this worked??
       ❯ mlir-opt \
   --convert-gpu-to-rocdl \
@@ -70,3 +69,14 @@ mlir-opt gpu.mlir \
 mlir-opt %s \
 mlir-opt -pass-pipeline='builtin.module(gpu.module(strip-debuginfo,convert-gpu-to-rocdl{index-bitwidth=32 runtime=HIP}),rocdl-attach-target{chip=%chip})' \
 mlir-opt -gpu-to-llvm -reconcile-unrealized-casts -gpu-module-to-binary \
+
+
+12/03/26
+
+mlir-opt vecadd_gpu.mlir \
+--convert-arith-to-llvm \
+--convert-math-to-llvm \
+--gpu-kernel-outlining \
+--convert-gpu-to-rocdl \
+--rocdl-attach-target \
+--gpu-to-llvm  -o vecadd_gpu.mlir

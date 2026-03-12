@@ -1,4 +1,4 @@
-// RUN: mlir-opt %s \
+// RUN:   mlir-opt %s \
 // RUN: | mlir-opt -convert-scf-to-cf \
 // RUN: | mlir-opt -gpu-kernel-outlining \
 // RUN: | mlir-opt -pass-pipeline='builtin.module(gpu.module(strip-debuginfo,convert-gpu-to-rocdl{use-bare-ptr-memref-call-conv=true}),rocdl-attach-target{chip=%chip})' \
