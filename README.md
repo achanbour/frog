@@ -74,5 +74,5 @@ In addition to the above, we also started rewriting the local kernel computing t
 - Call the (compiled?) MLIR script from within Firedrake in `compile_global_kernel` function
 
 ## Resources & Useful Links
-Stephen Diehl's [blog](https://www.stephendiehl.com/posts/mlir_introduction/) on MLIR (needs updating though!)
-LLVM repo featuring [MLIR ROCm examples](https://github.com/llvm/llvm-project/tree/837b89fc0fc6d0ae7f68e835789ee62580314dcc/mlir/test/Integration/GPU/ROCM)
+- Stephen Diehl's [blog](https://www.stephendiehl.com/posts/mlir_introduction/) on MLIR (needs updating though!)
+- LLVM repo featuring [MLIR ROCm examples](https://github.com/llvm/llvm-project/tree/837b89fc0fc6d0ae7f68e835789ee62580314dcc/mlir/test/Integration/GPU/ROCM)
