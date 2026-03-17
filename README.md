@@ -39,7 +39,7 @@ Now what is MLIR? MLIR, for Multi-Level Intermediate Representation, is a framew
 - The `gpu` dialect represents parallel execution over a GPU grid (blocks and threads)
 Finally everything gets lowered into LLVM IR.
 
-The issue with LLVM IR is that it is quite low-level but modern compilers (for MLs, DSLs etc.) need to reason at higher levels of abstractions before lowering code to close-to-machine-level representation (LLVM IR). Going straight into LLVM IR looses too much high-level information early on. Roughly speaking, in LLVM IR, all operations merely just become loops and data structures become pointers to memory blocks. Using the `affine` dialect, we can substantially improve the way loops are handled at the lower level e.g., break loops into cache-friendly chunks, re-order loops to improve memory access patterns, use vectorization hints etc. \
+The issue with LLVM IR is that it is quite low-level but modern compilers (for MLs, DSLs etc.) need to reason at higher levels of abstractions before lowering code to close-to-machine-level representation (LLVM IR). Going straight into LLVM IR looses too much high-level information early on. Roughly speaking, in LLVM IR, all operations merely just become loops and data structures become pointers to memory blocks. Using the `affine` dialect, we can substantially improve the way loops are handled at the lower level e.g., break loops into cache-friendly chunks, re-order loops to improve memory access patterns, use vectorization hints etc.
 
 Example 1: Tiling for matrix multiply 
 ```
@@ -49,6 +49,7 @@ for i: for j: for k: C[i,j] += A[i,k] * B[k,j]
 # After: tiled for cache
 for i0, j0, k0 (tile): for i1, j1, k1 (inner): ...
 ```
+
 Example 2: Type casting and varying precision 
 In ML models, it's common to alternate between different levels of precision.  MLIR dialects can be used to explicitly mark where it's safe to use `int8` or `float16`, insert the right conversion/casting ops, propagate lower precision through the computation graph etc.
 
