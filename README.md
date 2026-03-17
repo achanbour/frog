@@ -40,7 +40,8 @@ Now what is MLIR? MLIR, for Multi-Level Intermediate Representation, is a framew
 Finally everything gets lowered into LLVM IR.
 
 The issue with LLVM IR is that it is quite low-level but modern compilers (for MLs, DSLs etc.) need to reason at higher levels of abstractions before lowering code to close-to-machine-level representation (LLVM IR). Going straight into LLVM IR looses too much high-level information early on. Roughly speaking, in LLVM IR, all operations merely just become loops and data structures become pointers to memory blocks. Using the `affine` dialect, we can substantially improve the way loops are handled at the lower level e.g., break loops into cache-friendly chunks, re-order loops to improve memory access patterns, use vectorization hints etc. \
-Example 1: Tiling for matrix multiply \ 
+
+Example 1: Tiling for matrix multiply 
 ```
 # Before: poor cache behaviour
 for i: for j: for k: C[i,j] += A[i,k] * B[k,j]
