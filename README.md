@@ -1,6 +1,6 @@
 # What is FRoG?
 
-FRoG stands for Firedrake Routines on GPUs and comprises of experimental work on running Firedrake routines on AMD GPUs.
+FRoG stands for Firedrake Routines on GPUs and comprises of experimental work on running Firedrake routines on GPUs (AMD and beyond).
 
 This work was initiated as part of the AMD Cross-community hackathon in Birmingham 11-13 March 2026.
 
@@ -21,7 +21,7 @@ assemble(f*v*dx)
 
 The local kernel `mykernel.mlir` computes the integral expressed in this one-form over a single cell of the mesh.
 
-After successfully executing `mykernel.mlir` on the CPU, we spent some time thinking on the how-s and why-s of executing finite element operator assembly on heterogenous hardware (CPU vs GPU). One thing we noted is that assembly on the GPU would make most sense if one is assembling operators in a [matrix free](https://www.firedrakeproject.org/matrix-free.html) way. For a problem requiring the matrix to be explicitly constructed and stored, assembling on the CPU and copying over to the GPU would only make sense if executing the solve operation (for which the GPU is most suited) once. However, this quickly becomes a major performance bottleneck particularly when used in a nonlinear solver or in a time-dependent scheme where the matrix needs to be re-assembled multiple times.
+After successfully executing `mykernel.mlir` on the CPU, we spent some time thinking on the how-s and why-s of executing finite element operator assembly on heterogenous hardware (CPU & GPU). One thing we noted is that assembly on the GPU would make most sense if one is assembling operators in a [matrix free](https://www.firedrakeproject.org/matrix-free.html) way. For a problem requiring the matrix to be explicitly constructed and stored, assembling on the CPU and copying over to the GPU would only make sense if executing the solve operation (for which the GPU is most suited) once. However, this quickly becomes a major performance bottleneck particularly when used in a nonlinear solver or in a time-dependent scheme where the matrix needs to be re-assembled multiple times.
 Crucially, when assembling operators in function spaces of degree>2, the matrix to be assembled is typically very large and so the performance is limited by the cost of reading the relevant matrix entries during the assembly operation. If assembly is matrix free then this cost is much less significant, and assembly is instead dominated by more FLOPS (which is really fast on a GPU).
 
 #### Our strategy: use LLVM MLIR
@@ -37,11 +37,13 @@ Now what is MLIR? MLIR, for Multi-Level Intermediate Representation, is a framew
 - The `tensor` dialect represents matrix ops at a high level
 - The `affine` and `scf` dialects handle loops and memory
 - The `gpu` dialect represents parallel execution over a GPU grid (blocks and threads)
+
 Finally everything gets lowered into LLVM IR.
 
 The issue with LLVM IR is that it is quite low-level but modern compilers (for MLs, DSLs etc.) need to reason at higher levels of abstractions before lowering code to close-to-machine-level representation (LLVM IR). Going straight into LLVM IR looses too much high-level information early on. Roughly speaking, in LLVM IR, all operations merely just become loops and data structures become pointers to memory blocks. Using the `affine` dialect, we can substantially improve the way loops are handled at the lower level e.g., break loops into cache-friendly chunks, re-order loops to improve memory access patterns, use vectorization hints etc.
 
-Example 1: Tiling for matrix multiply 
+Example 1: Tiling for matrix multiply
+
 ```
 # Before: poor cache behaviour
 for i: for j: for k: C[i,j] += A[i,k] * B[k,j]
@@ -50,10 +52,12 @@ for i: for j: for k: C[i,j] += A[i,k] * B[k,j]
 for i0, j0, k0 (tile): for i1, j1, k1 (inner): ...
 ```
 
-Example 2: Type casting and varying precision 
+Example 2: Type casting and varying precision
+
 In ML models, it's common to alternate between different levels of precision.  MLIR dialects can be used to explicitly mark where it's safe to use `int8` or `float16`, insert the right conversion/casting ops, propagate lower precision through the computation graph etc.
 
-All in all, instead of relying on the LLVM compiler to guess what's best to optimise your code, use MLIR to gain more control over how your code should best be written taking into account both program logic and the specifics of the code will be running on.
+All in all, instead of relying on the LLVM compiler to guess what's best to optimise your code, use MLIR to gain more control over how your code should best be written taking into account both program logic and the specifics of the hardware the code will be running on.
+
 ### The crux of our work during the hackathon
 With great pain, we managed to figure out the right compiler passes needed to execute a simplified vector addition kernel on AMD GPUs. These are:
 
