@@ -88,7 +88,7 @@ mlir-runner vecadd_gpu_ac_opt.mlir \
 --shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libmlir_async_runtime.so \
 --shared-libs=$HOME/frog/libmlir_rocm_runtime.so \
 --shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libclang-cpp.so \
---shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libLLVMOffload.so \
+--shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libLLVMOffload.so
 ```
 Figuring out the shared libraries required for successful compilation was difficult due to lack of documentation and workable examples. In particular, several required symbols in the lowered MLIR script produced by the first lowering phase couldn't be located by the MLIR compiler  as the required shared libraies were missing in the LLVM installation of ROCm on the cluster. These symbols are MLIR symbols representing wrappers around ROCm runtime wrappers. An example of this is https://github.com/llvm/llvm-project/blob/main/mlir/lib/ExecutionEngine/RocmRuntimeWrappers.cpp.
 
