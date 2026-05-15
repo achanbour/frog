@@ -8,7 +8,7 @@ This work was initiated as part of the AMD Cross-community hackathon in Birmingh
 ### The very first steps
 We started with an MLIR script of a Firedrake-generated local kernel of a one-form assembly. In Firedrake, this operation is expressed as:
 
-```
+```python
 from firedrake import *
 
 mesh = UnitSquareMesh(1, 1)
@@ -63,36 +63,38 @@ With great pain, we managed to figure out the right compiler passes needed to ex
 
 for the first MLIR lowering phase:
 
-```
-mlir-opt vecadd_gpu_fixed.mlir \                                                                             --gpu-kernel-outlining \                                                                                                                              --convert-gpu-to-rocdl="chipset=gfx942" \
-  --rocdl-attach-target="chip=gfx942" \
-  --gpu-module-to-binary \
-  --gpu-to-llvm \
-  --convert-func-to-llvm \
-  --convert-memref-to-llvm \
-  --convert-arith-to-llvm \
-  --reconcile-unrealized-casts \
-  -o vecadd_gpu_ac_opt.mlir
+```shell
+mlir-opt vecadd_gpu_fixed.mlir \
+--gpu-kernel-outlining \
+--convert-gpu-to-rocdl="chipset=gfx942" \
+--rocdl-attach-target="chip=gfx942" \
+--gpu-module-to-binary \
+--gpu-to-llvm \
+--convert-func-to-llvm \
+--convert-memref-to-llvm \
+--convert-arith-to-llvm \
+--reconcile-unrealized-casts \
+-o vecadd_gpu_ac_opt.mlir
 ```
 
 for the MLIR compilation + execution:
 
-```
+```shell
 mlir-runner vecadd_gpu_ac_opt.mlir \
-  -e main \
-  --entry-point-result=void \
-  --shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libmlir_runner_utils.so \
-  --shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libmlir_c_runner_utils.so \  
-  --shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libmlir_async_runtime.so \
-  --shared-libs=$HOME/frog/libmlir_rocm_runtime.so \
-  --shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libclang-cpp.so \
-  --shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libLLVMOffload.so \
+-e main \
+--entry-point-result=void \
+--shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libmlir_runner_utils.so \
+--shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libmlir_c_runner_utils.so \
+--shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libmlir_async_runtime.so \
+--shared-libs=$HOME/frog/libmlir_rocm_runtime.so \
+--shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libclang-cpp.so \
+--shared-libs=/shared/apps/ubuntu/opt/rocm-7.2.0/llvm/lib/libLLVMOffload.so \
 ```
 Figuring out the shared libraries required for successful compilation was difficult due to lack of documentation and workable examples. In particular, several required symbols in the lowered MLIR script produced by the first lowering phase couldn't be located by the MLIR compiler  as the required shared libraies were missing in the LLVM installation of ROCm on the cluster. These symbols are MLIR symbols representing wrappers around ROCm runtime wrappers. An example of this is https://github.com/llvm/llvm-project/blob/main/mlir/lib/ExecutionEngine/RocmRuntimeWrappers.cpp.
 
 In order to verify that our kernel actually runs on the GPU and not the CPU, we pulled some profiling stats using AMD's native profiling tool [rocprofv3](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-rocprofv3.html)
 
-```
+```shell
 rocprofv3 --hsa-trace --output-format csv -- <mlir-execution-command>
 ```
 
