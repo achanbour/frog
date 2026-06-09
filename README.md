@@ -111,3 +111,38 @@ In addition to the above, we also started rewriting the local kernel computing t
 ## Resources & Useful Links
 - Stephen Diehl's [blog](https://www.stephendiehl.com/posts/mlir_introduction/) on MLIR (needs updating though!)
 - LLVM repo featuring [MLIR ROCm examples](https://github.com/llvm/llvm-project/tree/837b89fc0fc6d0ae7f68e835789ee62580314dcc/mlir/test/Integration/GPU/ROCM)
+
+## June Software Week Updates
+1. A shell script has been added to install MLIR binaries on cross-platform devices
+### MLIR Installer
+
+A bash script to install precompiled MLIR binaries to a local user directory,
+requiring no `sudo` access. Supports Linux (x86_64, arm64) and macOS (arm64).
+
+#### Requirements
+
+- Linux (x86\_64 or arm64) or macOS (arm64 / Apple Silicon)
+- `wget` available on `PATH`
+- `tar` available on `PATH`
+
+#### Usage
+
+Make the script executable and run it:
+
+```bash
+chmod +x install_mlir.sh
+./install_mlir.sh
+```
+
+After installation, reload your shell config to use MLIR in new terminal sessions:
+
+```bash
+source ~/.bashrc   # bash
+source ~/.zshrc    # zsh
+```
+
+Or simply open a new terminal. To verify the installation manually at any time:
+
+```bash
+mlir-opt --version
+```
