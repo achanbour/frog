@@ -2,6 +2,8 @@
 
 # ==============================================================================
 # MLIR Installer (no sudo required)
+# Written for FRoG (Firedrake Routines on GPU)
+# Author: Divij Ghose <dtg125[at]ic[dot]ac[dot]uk>
 # ==============================================================================
 
 set -euo pipefail
@@ -12,10 +14,14 @@ set -euo pipefail
 MLIR_VERSION="19.1.0"
 DOWNLOAD_DIR="${HOME}/.local/mlir/downloads"
 INSTALL_DIR="${HOME}/.local/mlir"
+MLIR_ARCHIVE=""   # populated by download_mlir()
+MLIR_HOME=""      # populated by extract_mlir()
+SHELL_RC=""       # populated by configure_environment()
 
 MLIR_URL_LINUX_x86_64="https://github.com/llvm/llvm-project/releases/download/llvmorg-${MLIR_VERSION}/LLVM-${MLIR_VERSION}-Linux-X64.tar.xz"
 MLIR_URL_LINUX_arm64="https://github.com/llvm/llvm-project/releases/download/llvmorg-${MLIR_VERSION}/LLVM-${MLIR_VERSION}-Linux-ARM64.tar.xz"
 MLIR_URL_MACOS_arm64="https://github.com/llvm/llvm-project/releases/download/llvmorg-${MLIR_VERSION}/LLVM-${MLIR_VERSION}-macOS-ARM64.tar.xz"
+
 
 # ------------------------------------------------------------------------------
 # Detect OS and Architecture
@@ -149,24 +155,38 @@ extract_mlir() {
         exit 1
     fi
 
-    # --- 2. Check that tar is available ---
+    # --- 2. Check that tar and xz are available ---
     if ! command -v tar &>/dev/null; then
         echo "[ERROR] 'tar' was not found on your PATH." >&2
         echo "        Please ensure 'tar' is installed and re-run." >&2
         exit 1
     fi
 
+    if ! command -v xz &>/dev/null; then
+        echo "[ERROR] 'xz' was not found on your PATH." >&2
+        echo "        Try loading it via your module system:" >&2
+        echo "          module load xz" >&2
+        echo "        Or install it to your home directory and add it to PATH." >&2
+        exit 1
+    fi
+
     # --- 3. Peek inside the archive to find the top-level directory name ---
     local top_level_dir
-    top_level_dir=$(tar tf "${MLIR_ARCHIVE}" 2>/dev/null | head -1 | cut -d'/' -f1)
+
+    # Use the second line which is guaranteed to have a slash, then cut on it.
+    # The || true prevents set -e from killing the script if tar tf fails.
+    top_level_dir=$(tar tf "${MLIR_ARCHIVE}" 2>/dev/null | head -2 | tail -1 | cut -d'/' -f1 || true)
 
     if [[ -z "${top_level_dir}" ]]; then
         echo "[ERROR] Could not read contents of archive: '${MLIR_ARCHIVE}'" >&2
-        echo "        The file may be corrupt. Delete it and re-run to re-download." >&2
+        echo "        Run the manual diagnostics to investigate:" >&2
+        echo "          tar tf ${MLIR_ARCHIVE} 2>&1 | head -5" >&2
+        echo "        The file may be corrupt. Deleting it so it can be re-downloaded." >&2
         rm -f "${MLIR_ARCHIVE}"
         exit 1
     fi
 
+    echo "[INFO] Resolved top-level dir: ${top_level_dir}"
     MLIR_HOME="${INSTALL_DIR}/${top_level_dir}"
 
     # --- 4. Skip extraction if the top-level directory already exists ---
@@ -182,7 +202,7 @@ extract_mlir() {
     fi
 
     # --- 6. Extract the archive ---
-    echo "[INFO] Extracting to: ${INSTALL_DIR}"
+    echo "[INFO] Extracting to: ${INSTALL_DIR} (this may take a while)..."
     if ! tar xf "${MLIR_ARCHIVE}" -C "${INSTALL_DIR}"; then
         echo "[ERROR] Extraction failed for archive: '${MLIR_ARCHIVE}'" >&2
         echo "        The file may be corrupt. Deleting it so it can be re-downloaded." >&2
@@ -207,29 +227,32 @@ configure_environment() {
         exit 1
     fi
 
-    # --- 2. Determine the correct shell RC file ---
-    local shell_rc
+    local mlir_bin_dir="${MLIR_HOME}/bin"
+
     case "${SHELL}" in
-        */bash) shell_rc="${HOME}/.bashrc"    ;;
-        */zsh)  shell_rc="${HOME}/.zshrc"     ;;
-        */fish) shell_rc="${HOME}/.config/fish/config.fish" ;;
+        */bash) SHELL_RC="${HOME}/.bashrc"    ;;
+        */zsh)  SHELL_RC="${HOME}/.zshrc"     ;;
+        */fish) SHELL_RC="${HOME}/.config/fish/config.fish" ;;
         *)
             echo "[WARN] Unrecognised shell '${SHELL}', defaulting to ~/.bashrc" >&2
-            shell_rc="${HOME}/.bashrc"
+            SHELL_RC="${HOME}/.bashrc"
             ;;
     esac
 
+
+
+
+
     # --- 3. Skip if the export line is already present (idempotent) ---
-    if grep -qF "${mlir_bin_dir}" "${shell_rc}" 2>/dev/null; then
-        echo "[INFO] PATH already configured in ${shell_rc}, skipping."
+    if grep -qF "${mlir_bin_dir}" "${SHELL_RC}" 2>/dev/null; then
+        echo "[INFO] PATH already configured in ${SHELL_RC}, skipping."
     else
-        # --- 4. Append the export line ---
         {
             echo ""
             echo "# Added by MLIR installer"
             echo "export PATH=\"${mlir_bin_dir}:\$PATH\""
-        } >> "${shell_rc}"
-        echo "[INFO] Added to ${shell_rc}:"
+        } >> "${SHELL_RC}"
+        echo "[INFO] Added to ${SHELL_RC}:"
         echo "         export PATH=\"${mlir_bin_dir}:\$PATH\""
     fi
 
@@ -288,7 +311,7 @@ verify_installation() {
     echo "  Location : ${MLIR_HOME}"
     echo "  Binary   : ${mlir_opt}"
     echo "  To use in new shells, reload your config:"
-    echo "    source ${shell_rc}"
+    echo "    source ${SHELL_RC}"
     echo "================================================================"
 }
 
