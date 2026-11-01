@@ -35,3 +35,52 @@ Firedrake relies on two main backend components:
 # GEM to MLIR lowering
 
 This is to be implemented at step 3 i.e., walk the Impero tree and emit MLIR operations where currently loopy emits loopy instructions and pymbolic expressions. Step 3 onward would be MLIR's job: `mlir-opt` passes + lowering into LLVM.
+
+## TODO
+
+Write a new generator that's meant to replace `generate_loopy` (in `tsfc/kernel_interface/firedrake_loopy.py`) i.e., instead of producing a loopy kernel out of the `ImperoC` object (produced by `compile_gem`), we need to generate an MLIR kernel. 
+
+    The `ImperoC-to-MLIR` generator should take the same inputs as `generate_loopy` and its signature is therefore:
+
+    ```
+    generate_mlir(impero_c, args, scalar_type, kernel_name,...) -> MLIR module
+    ```
+
+At present, for a one-form such as `f*v*dx`, TSFC produces an `ImperoC` program (steps 1+2), and `tsfc/loopy.py:generate` turns it into a loopy kernel. Loopy turns that into C, which is compiled and run. The C code can be obtained by calling loopy's code generator which basically turns a loopy kernel (`TranslationUnit`) into source code (C):
+
+```
+import loopy as lp
+
+print(lp.generate_code_v2(ast).device_code())
+```
+
+Inspect what the C code of a given loopy kernel looks like to figure out how a given Impero or GEM node should be lowered in MLIR
+
+Compile/run the MLIR kernel and check numerical results agree.
+  - Call the compiled loopy kernel directly or assemble through Firedrake
+  - Lower MLIR with `mlir-opt` + run with `mlir-runner` OR compile to a shared library and call it from Python.
+
+> Need to list every GEM + Impero node type and choose the MLIR dialect and op for each one
+
+## My Notes
+
+My understanding of what `loopy.py:generate` does:
+1. Sets up the `LoopyContext`, mainly for book-keeping
+2. Declares the temporaries
+3. Creates instructions via the `statement` single-dispatch function, which returns for every Impero statement (`Evaluate`, `Return` etc.) a loopy instruction (statement).
+   1. `expression` dispatches on the GEM node type and returns a pymbolic expression. 
+4. Build loop domains (`create_domains`)
+5. Assemble the kernel (`make_kernel`)
+
+We can keep the same skeleton: **context** + **statement dispatcher** + **expression dispatcher**. The expression dispatcher will return an MLIR SSA value instead of a pymbolic. Instead of a tree, we emit ops on the go, in the right order inside the right loop.
+
+Note that loopy has no loop instructions: loops are defined implicitly. On the other hand, we can express loops explicitly in MLIR (`scf.for` or `affine.for`)
+
+   - Impero `For` becomes an MLIR `scf`/`affine` for loop.
+   - Storage:
+     - Temporaries become allocations `memref.alloca`?
+     - Constants become global constants
+     - Kernel arguments become function arguments
+   - Memory access:
+     - `Indexed` becomes a load `memref.load`
+     - `Return` becomes a load + store?
